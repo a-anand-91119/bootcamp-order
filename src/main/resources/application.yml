@@ -5,3 +5,23 @@ spring:
     url: jdbc:postgresql://localhost:5432/oms_bootcamp
     username: foobar
     password: foobar
+  kafka:
+    bootstrap-servers: localhost:9092
+  docker:
+    compose:
+      enabled: false
+  jpa:
+    open-in-view: false
+app:
+  kafka:
+    topics:
+      order_created: order.created
+    admin:
+      topics:
+        - name: order.created
+          partitions: 64
+          replication-factor: 1
+          configs:
+            cleanup.policy: delete
+            retention.ms: "604800000"
+            compression.type: gzip
