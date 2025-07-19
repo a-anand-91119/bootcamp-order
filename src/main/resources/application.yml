@@ -1,3 +1,7 @@
 spring:
   application:
     name: bootcamp-order
+  datasource:
+    url: jdbc:postgresql://localhost:5432/oms_bootcamp
+    username: foobar
+    password: foobar

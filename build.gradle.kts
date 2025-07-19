@@ -59,7 +59,6 @@ spotless {
 	java {
 		importOrder()
 		removeUnusedImports()
-		licenseHeaderFile(rootProject.file("LICENSE"))
 		eclipse("4.35").configFile("spotless.xml")
 		formatAnnotations()
 		trimTrailingWhitespace()

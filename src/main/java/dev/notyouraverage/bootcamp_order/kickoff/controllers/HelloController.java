@@ -1,5 +1,7 @@
 package dev.notyouraverage.bootcamp_order.kickoff.controllers;
 
+import dev.notyouraverage.base.dtos.response.wrapper.ResponseWrapper;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -7,7 +9,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class HelloController {
 
     @GetMapping
-    public String hello() {
-        return "Hello World!";
+    public ResponseEntity<ResponseWrapper<String>> hello() {
+        return ResponseEntity.ok(ResponseWrapper.success("Hello World"));
     }
 }
