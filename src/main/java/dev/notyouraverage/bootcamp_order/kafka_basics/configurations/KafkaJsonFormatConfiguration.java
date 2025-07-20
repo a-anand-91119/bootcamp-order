@@ -1,15 +1,15 @@
 package dev.notyouraverage.bootcamp_order.kafka_basics.configurations;
 
-import dev.notyouraverage.bootcamp_order.kafka_basics.constants.KafkaConstants;
+import dev.notyouraverage.bootcamp_order.constants.KafkaConstants;
+import dev.notyouraverage.bootcamp_order.kafka_basics.properties.KafkaJsonFormatProperties;
 import dev.notyouraverage.bootcamp_order.kafka_basics.utils.KafkaConfigurationUtils;
-import dev.notyouraverage.messages.JsonSerializable;
+import dev.notyouraverage.messages.json.JsonSerializable;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import org.apache.kafka.clients.producer.ProducerConfig;
 import org.apache.kafka.common.serialization.StringDeserializer;
 import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.boot.autoconfigure.kafka.KafkaProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.kafka.config.ConcurrentKafkaListenerContainerFactory;
@@ -21,13 +21,13 @@ import org.springframework.kafka.support.serializer.JsonSerializer;
 
 @Configuration
 @RequiredArgsConstructor
-public class KafkaConfiguration {
+public class KafkaJsonFormatConfiguration {
 
-    private final KafkaProperties kafkaProperties;
+    private final KafkaJsonFormatProperties kafkaJsonFormatProperties;
 
     @Bean(KafkaConstants.JSON_SERIALIZABLE_PRODUCER_FACTORY)
     public ProducerFactory<String, JsonSerializable> jsonSerializableProducerFactory() {
-        Map<String, Object> props = KafkaConfigurationUtils.buildCommonProducerConfigs(kafkaProperties);
+        Map<String, Object> props = KafkaConfigurationUtils.buildCommonProducerConfigs(kafkaJsonFormatProperties);
         props.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class.getName());
         props.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class.getName());
         return new DefaultKafkaProducerFactory<>(props);
@@ -46,7 +46,7 @@ public class KafkaConfiguration {
 
     @Bean(KafkaConstants.JSON_SERIALIZABLE_CONSUMER_FACTORY)
     public ConsumerFactory<String, JsonSerializable> jsonSerializableConsumerFactory() {
-        Map<String, Object> props = KafkaConfigurationUtils.buildCommonConsumerConfigs(kafkaProperties);
+        Map<String, Object> props = KafkaConfigurationUtils.buildCommonConsumerConfigs(kafkaJsonFormatProperties);
         props.put(ErrorHandlingDeserializer.KEY_DESERIALIZER_CLASS, StringDeserializer.class.getName());
         props.put(ErrorHandlingDeserializer.VALUE_DESERIALIZER_CLASS, JsonDeserializer.class.getName());
         props.put(JsonDeserializer.TRUSTED_PACKAGES, KafkaConstants.TRUSTED_PACKAGES);

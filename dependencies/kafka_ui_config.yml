@@ -1,0 +1,12 @@
+auth:
+  type: DISABLED
+kafka:
+  clusters:
+  - bootstrapServers: kafka:9094
+    name: OMS Local Cluster
+    properties: {}
+    readOnly: false
+    schemaRegistry: http://schema-registry:8081
+rbac:
+  roles: []
+webclient: {}

@@ -12,12 +12,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/api/v1/kafka")
+@RequestMapping("/api/v1/kafka/json")
 @RequiredArgsConstructor
 public class KafkaController {
     private final KafkaService kafkaService;
 
-    @PostMapping("/send")
+    @PostMapping("send")
     public ResponseEntity<ResponseWrapper<String>> send(@Valid @RequestBody CreateOrderRequest request) {
         kafkaService.send(request);
         return ResponseEntity.ok(ResponseWrapper.success("Order created message sent successfully"));

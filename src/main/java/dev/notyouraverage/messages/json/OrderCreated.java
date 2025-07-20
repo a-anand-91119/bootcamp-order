@@ -1,4 +1,4 @@
-package dev.notyouraverage.messages;
+package dev.notyouraverage.messages.json;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;

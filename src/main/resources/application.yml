@@ -7,19 +7,45 @@ spring:
     password: foobar
   kafka:
     bootstrap-servers: localhost:9092
+    properties:
+      schema.registry.url: http://localhost:8081
+      key.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
+      key.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
+      specific.avro.reader: true
+
   docker:
     compose:
       enabled: false
+      file: ./dependencies/compose.yaml
   jpa:
     open-in-view: false
 app:
   kafka:
+    avro:
+      bootstrap-servers: localhost:9092
+      properties:
+        schema.registry.url: http://localhost:8081
+      consumer:
+        properties:
+          specific.avro.reader: true
+    json:
+      bootstrap-servers: localhost:9092
     topics:
       order_created: order.created
+      user_avro_message: avro.user
     admin:
       topics:
         - name: order.created
-          partitions: 64
+          partitions: 8
+          replication-factor: 1
+          configs:
+            cleanup.policy: delete
+            retention.ms: "604800000"
+            compression.type: gzip
+        - name: avro.user
+          partitions: 8
           replication-factor: 1
           configs:
             cleanup.policy: delete

@@ -1,9 +1,12 @@
+import com.github.davidmc24.gradle.plugin.avro.GenerateAvroJavaTask
+
 plugins {
 	java
 	alias(libs.plugins.springframework.boot)
 	alias(libs.plugins.spring.dependency.management)
 	alias(libs.plugins.spotless)
 	alias(libs.plugins.flyway)
+	alias(libs.plugins.avro)
 }
 
 group = "dev.notyouraverage"
@@ -23,25 +26,30 @@ configurations {
 
 repositories {
 	mavenCentral()
+	maven {
+		url = uri("https://packages.confluent.io/maven/")
+	}
 }
 
 dependencies {
-	implementation(libs.spring.kafka)
-
 	implementation(libs.spring.boot.starter.web)
 	implementation(libs.spring.boot.starter.actuator)
 	implementation(libs.spring.boot.starter.validation)
 	implementation(libs.spring.boot.starter.data.jpa)
-	implementation(libs.springdoc.openapi.starter.webmvc.ui)
+
 
 	implementation(libs.flyway.core)
-	runtimeOnly(libs.flyway.database.postgresql)
+	implementation(libs.spring.kafka)
+	implementation(libs.kafka.avro.serializer)
+	implementation(libs.springdoc.openapi.starter.webmvc.ui)
 
 	developmentOnly(libs.spring.boot.devtools)
 	developmentOnly(libs.spring.boot.docker.compose)
 
 	compileOnly(libs.lombok)
+
 	runtimeOnly(libs.postgresql)
+	runtimeOnly(libs.flyway.database.postgresql)
 
 	annotationProcessor(libs.lombok)
 	annotationProcessor(libs.spring.boot.configuration.processor)
@@ -64,4 +72,12 @@ spotless {
 		trimTrailingWhitespace()
 		endWithNewline()
 	}
+}
+
+tasks.named<GenerateAvroJavaTask>("generateAvroJava") {
+	setOutputDir(file("src/main/java"))
+}
+
+tasks.named("spotlessJava") {
+	dependsOn("generateAvroJava")
 }
