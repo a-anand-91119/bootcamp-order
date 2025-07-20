@@ -7,7 +7,7 @@ import lombok.Getter;
 @Getter
 public enum AppErrorCode implements ErrorCodeTrait {
     USER_NOT_FOUND("001", "User with the provided ID not found"),
-    ;
+    ORDER_LIFECYCLE_NOT_FOUND("002", "Order Lifecycle with the provided order ID not found");
 
     private final String code;
 

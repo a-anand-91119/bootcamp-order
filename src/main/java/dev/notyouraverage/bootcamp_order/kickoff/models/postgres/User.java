@@ -2,18 +2,17 @@ package dev.notyouraverage.bootcamp_order.kickoff.models.postgres;
 
 import jakarta.persistence.*;
 import java.util.UUID;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 @Data
 @Entity
-@Builder
 @Table(name = "users")
-@AllArgsConstructor
 @NoArgsConstructor
-public class User {
+@AllArgsConstructor
+@SuperBuilder(toBuilder = true)
+@EqualsAndHashCode(callSuper = true)
+public class User extends Base {
 
     @Id
     @Column(name = "id")

@@ -36,7 +36,7 @@ dependencies {
 	implementation(libs.spring.boot.starter.actuator)
 	implementation(libs.spring.boot.starter.validation)
 	implementation(libs.spring.boot.starter.data.jpa)
-
+	implementation(libs.spring.boot.starter.data.mongodb)
 
 	implementation(libs.flyway.core)
 	implementation(libs.spring.kafka)

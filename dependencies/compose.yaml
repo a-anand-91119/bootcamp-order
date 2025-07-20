@@ -51,3 +51,14 @@ services:
       SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9094
       SCHEMA_REGISTRY_DEBUG: 'true'
+
+  mongodb:
+    image: 'mongo:latest'
+    environment:
+      - 'MONGO_INITDB_DATABASE=oms_bootcamp'
+      - 'MONGO_INITDB_ROOT_PASSWORD=foobar'
+      - 'MONGO_INITDB_ROOT_USERNAME=foobar'
+    ports:
+      - '27017:27017'
+    volumes:
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
