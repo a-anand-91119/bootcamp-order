@@ -5,9 +5,11 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.time.LocalDateTime;
 import java.util.Map;
+import lombok.Builder;
 import lombok.Data;
 
 @Data
+@Builder
 public class CreateOrderEventRequest {
     @NotBlank private String orderId;
 

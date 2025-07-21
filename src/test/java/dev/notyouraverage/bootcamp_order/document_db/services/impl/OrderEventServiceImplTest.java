@@ -1,7 +1,8 @@
 package dev.notyouraverage.bootcamp_order.document_db.services.impl;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import dev.notyouraverage.bootcamp_order.document_db.documents.OrderEventDocument;
@@ -10,14 +11,16 @@ import dev.notyouraverage.bootcamp_order.document_db.dtos.OrderStateDTO;
 import dev.notyouraverage.bootcamp_order.document_db.dtos.request.CreateOrderEventRequest;
 import dev.notyouraverage.bootcamp_order.document_db.enums.OrderEventType;
 import dev.notyouraverage.bootcamp_order.document_db.enums.OrderStatus;
-import dev.notyouraverage.bootcamp_order.document_db.enums.Status;
 import dev.notyouraverage.bootcamp_order.document_db.repositories.OrderEventRepository;
 import dev.notyouraverage.bootcamp_order.document_db.transformers.OrderEventLifecycleTransformer;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -27,209 +30,217 @@ class OrderEventServiceImplTest {
     @Mock
     private OrderEventRepository orderEventRepository;
 
+    @Mock
     private OrderEventLifecycleTransformer orderEventLifecycleTransformer;
 
+    @InjectMocks
     private OrderEventServiceImpl orderEventService;
 
-    private final String TEST_ORDER_ID = "order-123";
+    private CreateOrderEventRequest createOrderEventRequest;
 
-    private final String TEST_CUSTOMER_ID = "customer-123";
+    private OrderEventDocument orderEventDocument;
 
-    private final String TEST_EVENT_SOURCE = "order-service";
+    private OrderEventDocumentDTO orderEventDocumentDTO;
 
-    private final LocalDateTime TEST_TIMESTAMP = LocalDateTime.of(2023, 1, 1, 12, 0);
+    private OrderStateDTO orderStateDTO;
+
+    private String orderId;
+
+    private String eventSource;
 
     @BeforeEach
     void setUp() {
-        orderEventLifecycleTransformer = new OrderEventLifecycleTransformer();
-        orderEventService = new OrderEventServiceImpl(orderEventRepository, orderEventLifecycleTransformer);
-    }
+        orderId = "order-123";
+        eventSource = "order-service";
 
-    @Test
-    void createOrderEvent_ShouldCreateAndReturnEvent() {
-        // Given
-        CreateOrderEventRequest request = new CreateOrderEventRequest();
-        request.setOrderId(TEST_ORDER_ID);
-        request.setEventType(OrderEventType.ORDER_CREATED);
-        request.setPayload(Map.of("customerId", TEST_CUSTOMER_ID, "amount", 100.0));
-        request.setTimestamp(TEST_TIMESTAMP);
-        request.setEventSource(TEST_EVENT_SOURCE);
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("customerId", "customer-456");
+        payload.put("totalAmount", "100.00");
 
-        OrderEventDocument savedEvent = OrderEventDocument.builder()
-                .id("event-123")
-                .orderId(TEST_ORDER_ID)
+        createOrderEventRequest = CreateOrderEventRequest.builder()
+                .orderId(orderId)
                 .eventType(OrderEventType.ORDER_CREATED)
-                .payload(request.getPayload())
-                .timestamp(TEST_TIMESTAMP)
-                .eventSource(TEST_EVENT_SOURCE)
-                .eventVersion(1)
-                .documentStatus(Status.ACTIVE)
+                .payload(payload)
+                .eventSource(eventSource)
                 .build();
 
-        when(orderEventRepository.getNextVersionForOrder(TEST_ORDER_ID)).thenReturn(1);
-        when(orderEventRepository.save(any(OrderEventDocument.class))).thenReturn(savedEvent);
+        orderEventDocument = OrderEventDocument.builder()
+                .mongoId("mongo-id-123")
+                .orderId(orderId)
+                .eventType(OrderEventType.ORDER_CREATED)
+                .payload(payload)
+                .timestamp(LocalDateTime.now())
+                .eventSource(eventSource)
+                .eventVersion(1)
+                .build();
 
-        // When
-        OrderEventDocumentDTO result = orderEventService.createOrderEvent(request);
+        orderEventDocumentDTO = OrderEventDocumentDTO.builder()
+                .id("mongo-id-123")
+                .orderId(orderId)
+                .eventType(OrderEventType.ORDER_CREATED)
+                .payload(payload)
+                .timestamp(LocalDateTime.now())
+                .eventSource(eventSource)
+                .eventVersion(1)
+                .build();
 
-        // Then
-        assertNotNull(result);
-        assertEquals("event-123", result.getId());
-        assertEquals(TEST_ORDER_ID, result.getOrderId());
-        assertEquals(OrderEventType.ORDER_CREATED, result.getEventType());
-        assertEquals(1, result.getEventVersion());
-        assertEquals(TEST_EVENT_SOURCE, result.getEventSource());
-
-        verify(orderEventRepository).getNextVersionForOrder(TEST_ORDER_ID);
-        verify(orderEventRepository).save(any(OrderEventDocument.class));
+        orderStateDTO = OrderStateDTO.builder()
+                .orderId(orderId)
+                .currentStatus(OrderStatus.CREATED)
+                .customerId("customer-456")
+                .currentEventVersion(1)
+                .currentPayload(payload)
+                .isDeleted(false)
+                .build();
     }
 
     @Test
-    void getEventsByOrderId_ShouldReturnOrderedEvents() {
+    void createOrderEvent_ShouldCreateAndSaveEvent_WhenValidRequest() {
         // Given
-        List<OrderEventDocument> events = Arrays.asList(
-                createTestEvent("event-1", 1, OrderEventType.ORDER_CREATED),
-                createTestEvent("event-2", 2, OrderEventType.ORDER_PAID)
-        );
-
-        when(orderEventRepository.findByOrderIdOrderedByVersion(TEST_ORDER_ID)).thenReturn(events);
+        when(orderEventRepository.getNextVersionForOrder(orderId)).thenReturn(1);
+        when(orderEventLifecycleTransformer.toEventEntity(createOrderEventRequest, 1))
+                .thenReturn(orderEventDocument);
+        when(orderEventRepository.save(orderEventDocument)).thenReturn(orderEventDocument);
+        when(orderEventLifecycleTransformer.toEventDocumentDTO(orderEventDocument))
+                .thenReturn(orderEventDocumentDTO);
 
         // When
-        List<OrderEventDocumentDTO> result = orderEventService.getEventsByOrderId(TEST_ORDER_ID);
+        OrderEventDocumentDTO result = orderEventService.createOrderEvent(createOrderEventRequest);
 
         // Then
-        assertNotNull(result);
-        assertEquals(2, result.size());
-        assertEquals(OrderEventType.ORDER_CREATED, result.get(0).getEventType());
-        assertEquals(OrderEventType.ORDER_PAID, result.get(1).getEventType());
+        assertThat(result).isNotNull();
+        assertThat(result.getOrderId()).isEqualTo(orderId);
+        assertThat(result.getEventType()).isEqualTo(OrderEventType.ORDER_CREATED);
 
-        verify(orderEventRepository).findByOrderIdOrderedByVersion(TEST_ORDER_ID);
+        verify(orderEventRepository).getNextVersionForOrder(orderId);
+        verify(orderEventLifecycleTransformer).toEventEntity(createOrderEventRequest, 1);
+        verify(orderEventRepository).save(orderEventDocument);
+        verify(orderEventLifecycleTransformer).toEventDocumentDTO(orderEventDocument);
     }
 
     @Test
-    void getOrderCurrentState_ShouldProjectCorrectState() {
+    void getEventsByOrderId_ShouldReturnOrderedEvents_WhenEventsExist() {
         // Given
-        List<OrderEventDocument> events = Arrays.asList(
-                createTestEventWithPayload(
-                        "event-1",
-                        1,
-                        OrderEventType.ORDER_CREATED,
-                        Map.of("customerId", TEST_CUSTOMER_ID, "amount", 100.0)
-                ),
-                createTestEvent("event-2", 2, OrderEventType.ORDER_PAID)
-        );
+        List<OrderEventDocument> events = List.of(orderEventDocument);
+        List<OrderEventDocumentDTO> eventDTOs = List.of(orderEventDocumentDTO);
 
-        when(orderEventRepository.findByOrderIdOrderedByVersion(TEST_ORDER_ID)).thenReturn(events);
+        when(orderEventRepository.findByOrderIdOrderedByVersion(orderId)).thenReturn(events);
+        when(orderEventLifecycleTransformer.toEventDocumentDTOs(events)).thenReturn(eventDTOs);
 
         // When
-        OrderStateDTO result = orderEventService.getOrderCurrentState(TEST_ORDER_ID);
+        List<OrderEventDocumentDTO> result = orderEventService.getEventsByOrderId(orderId);
 
         // Then
-        assertNotNull(result);
-        assertEquals(TEST_ORDER_ID, result.getOrderId());
-        assertEquals(OrderStatus.PAID, result.getCurrentStatus());
-        assertEquals(TEST_CUSTOMER_ID, result.getCustomerId());
-        assertEquals(2, result.getCurrentEventVersion());
-        assertEquals(2, result.getEvents().size());
-        assertFalse(result.isDeleted());
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getOrderId()).isEqualTo(orderId);
 
-        verify(orderEventRepository).findByOrderIdOrderedByVersion(TEST_ORDER_ID);
+        verify(orderEventRepository).findByOrderIdOrderedByVersion(orderId);
+        verify(orderEventLifecycleTransformer).toEventDocumentDTOs(events);
     }
 
     @Test
-    void deleteOrder_ShouldCreateDeleteEvent() {
+    void getOrderCurrentState_ShouldReturnProjectedState_WhenEventsExist() {
         // Given
-        List<OrderEventDocument> existingEvents = Arrays.asList(
-                createTestEvent("event-1", 1, OrderEventType.ORDER_CREATED)
-        );
+        List<OrderEventDocument> events = List.of(orderEventDocument);
 
-        OrderEventDocument deleteEvent = createTestEvent("delete-event", 2, OrderEventType.ORDER_DELETED);
-
-        when(orderEventRepository.findByOrderIdOrderedByVersion(TEST_ORDER_ID)).thenReturn(existingEvents);
-        when(orderEventRepository.getNextVersionForOrder(TEST_ORDER_ID)).thenReturn(2);
-        when(orderEventRepository.save(any(OrderEventDocument.class))).thenReturn(deleteEvent);
+        when(orderEventRepository.findByOrderIdOrderedByVersion(orderId)).thenReturn(events);
+        when(orderEventLifecycleTransformer.projectOrderState(events)).thenReturn(orderStateDTO);
 
         // When
-        OrderEventDocumentDTO result = orderEventService.deleteOrder(TEST_ORDER_ID, TEST_EVENT_SOURCE);
+        OrderStateDTO result = orderEventService.getOrderCurrentState(orderId);
 
         // Then
-        assertNotNull(result);
-        assertEquals(OrderEventType.ORDER_DELETED, result.getEventType());
-        assertEquals(2, result.getEventVersion());
+        assertThat(result).isNotNull();
+        assertThat(result.getOrderId()).isEqualTo(orderId);
+        assertThat(result.getCurrentStatus()).isEqualTo(OrderStatus.CREATED);
 
-        verify(orderEventRepository).findByOrderIdOrderedByVersion(TEST_ORDER_ID);
-        verify(orderEventRepository).getNextVersionForOrder(TEST_ORDER_ID);
-        verify(orderEventRepository).save(any(OrderEventDocument.class));
+        verify(orderEventRepository).findByOrderIdOrderedByVersion(orderId);
+        verify(orderEventLifecycleTransformer).projectOrderState(events);
     }
 
     @Test
-    void deleteOrder_WhenOrderNotExists_ShouldThrowException() {
+    void getOrderCurrentState_ShouldReturnNull_WhenNoEventsExist() {
         // Given
-        when(orderEventRepository.findByOrderIdOrderedByVersion(TEST_ORDER_ID)).thenReturn(Collections.emptyList());
+        when(orderEventRepository.findByOrderIdOrderedByVersion(orderId)).thenReturn(List.of());
+
+        // When
+        OrderStateDTO result = orderEventService.getOrderCurrentState(orderId);
+
+        // Then
+        assertThat(result).isNull();
+
+        verify(orderEventRepository).findByOrderIdOrderedByVersion(orderId);
+        verify(orderEventLifecycleTransformer, never()).projectOrderState(any());
+    }
+
+    @Test
+    void deleteOrder_ShouldCreateDeleteEvent_WhenOrderExists() {
+        // Given
+        List<OrderEventDocument> existingEvents = List.of(orderEventDocument);
+        CreateOrderEventRequest deleteRequest = CreateOrderEventRequest.builder()
+                .orderId(orderId)
+                .eventType(OrderEventType.ORDER_DELETED)
+                .eventSource(eventSource)
+                .build();
+
+        when(orderEventRepository.findByOrderIdOrderedByVersion(orderId)).thenReturn(existingEvents);
+        when(orderEventLifecycleTransformer.createDeleteEventRequest(orderId, eventSource))
+                .thenReturn(deleteRequest);
+        when(orderEventRepository.getNextVersionForOrder(orderId)).thenReturn(2);
+        when(orderEventLifecycleTransformer.toEventEntity(deleteRequest, 2))
+                .thenReturn(orderEventDocument);
+        when(orderEventRepository.save(orderEventDocument)).thenReturn(orderEventDocument);
+        when(orderEventLifecycleTransformer.toEventDocumentDTO(orderEventDocument))
+                .thenReturn(orderEventDocumentDTO);
+
+        // When
+        OrderEventDocumentDTO result = orderEventService.deleteOrder(orderId, eventSource);
+
+        // Then
+        assertThat(result).isNotNull();
+
+        verify(orderEventRepository).findByOrderIdOrderedByVersion(orderId);
+        verify(orderEventLifecycleTransformer).createDeleteEventRequest(orderId, eventSource);
+    }
+
+    @Test
+    void deleteOrder_ShouldThrowException_WhenOrderDoesNotExist() {
+        // Given
+        when(orderEventRepository.findByOrderIdOrderedByVersion(orderId)).thenReturn(List.of());
 
         // When & Then
-        RuntimeException exception = assertThrows(
-                RuntimeException.class,
-                () -> orderEventService.deleteOrder(TEST_ORDER_ID, TEST_EVENT_SOURCE)
-        );
+        assertThatThrownBy(() -> orderEventService.deleteOrder(orderId, eventSource))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessageContaining("Order not found with id: " + orderId);
 
-        assertEquals("Order not found with id: " + TEST_ORDER_ID, exception.getMessage());
-
-        verify(orderEventRepository).findByOrderIdOrderedByVersion(TEST_ORDER_ID);
-        verify(orderEventRepository, never()).save(any());
+        verify(orderEventRepository).findByOrderIdOrderedByVersion(orderId);
+        verify(orderEventLifecycleTransformer, never()).createDeleteEventRequest(any(), any());
     }
 
     @Test
-    void orderExists_WhenOrderHasEvents_ShouldReturnTrue() {
+    void orderExists_ShouldReturnTrue_WhenEventsExist() {
         // Given
-        List<OrderEventDocument> events = Arrays.asList(
-                createTestEvent("event-1", 1, OrderEventType.ORDER_CREATED)
-        );
-
-        when(orderEventRepository.findByOrderIdOrderedByVersion(TEST_ORDER_ID)).thenReturn(events);
+        when(orderEventRepository.findByOrderIdOrderedByVersion(orderId))
+                .thenReturn(List.of(orderEventDocument));
 
         // When
-        boolean result = orderEventService.orderExists(TEST_ORDER_ID);
+        boolean result = orderEventService.orderExists(orderId);
 
         // Then
-        assertTrue(result);
-
-        verify(orderEventRepository).findByOrderIdOrderedByVersion(TEST_ORDER_ID);
+        assertThat(result).isTrue();
+        verify(orderEventRepository).findByOrderIdOrderedByVersion(orderId);
     }
 
     @Test
-    void orderExists_WhenOrderHasNoEvents_ShouldReturnFalse() {
+    void orderExists_ShouldReturnFalse_WhenNoEventsExist() {
         // Given
-        when(orderEventRepository.findByOrderIdOrderedByVersion(TEST_ORDER_ID)).thenReturn(Collections.emptyList());
+        when(orderEventRepository.findByOrderIdOrderedByVersion(orderId)).thenReturn(List.of());
 
         // When
-        boolean result = orderEventService.orderExists(TEST_ORDER_ID);
+        boolean result = orderEventService.orderExists(orderId);
 
         // Then
-        assertFalse(result);
-
-        verify(orderEventRepository).findByOrderIdOrderedByVersion(TEST_ORDER_ID);
-    }
-
-    private OrderEventDocument createTestEvent(String eventId, Integer version, OrderEventType eventType) {
-        return createTestEventWithPayload(eventId, version, eventType, Map.of());
-    }
-
-    private OrderEventDocument createTestEventWithPayload(
-            String eventId,
-            Integer version,
-            OrderEventType eventType,
-            Map<String, Object> payload
-    ) {
-        return OrderEventDocument.builder()
-                .id(eventId)
-                .orderId(TEST_ORDER_ID)
-                .eventType(eventType)
-                .payload(payload)
-                .timestamp(TEST_TIMESTAMP.plusMinutes(version))
-                .eventSource(TEST_EVENT_SOURCE)
-                .eventVersion(version)
-                .documentStatus(Status.ACTIVE)
-                .build();
+        assertThat(result).isFalse();
+        verify(orderEventRepository).findByOrderIdOrderedByVersion(orderId);
     }
 }

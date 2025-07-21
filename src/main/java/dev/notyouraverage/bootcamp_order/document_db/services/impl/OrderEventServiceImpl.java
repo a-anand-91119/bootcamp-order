@@ -12,9 +12,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderEventServiceImpl implements OrderEventService {
@@ -26,10 +28,7 @@ public class OrderEventServiceImpl implements OrderEventService {
     @Override
     @Transactional
     public OrderEventDocumentDTO createOrderEvent(CreateOrderEventRequest request) {
-        // Get next version number for this order
         Integer nextVersion = orderEventRepository.getNextVersionForOrder(request.getOrderId());
-
-        // Create and save the event
         OrderEventDocument orderEvent = orderEventLifecycleTransformer.toEventEntity(request, nextVersion);
         OrderEventDocument savedEvent = orderEventRepository.save(orderEvent);
 
@@ -74,14 +73,11 @@ public class OrderEventServiceImpl implements OrderEventService {
 
     @Override
     public List<OrderStateDTO> getOrderStatesByCustomerId(String customerId) {
-        // Get all events and group by orderId
         List<OrderEventDocument> allEvents = orderEventRepository.findAllOrderedByOrderIdAndVersion();
 
-        // Group events by orderId
         Map<String, List<OrderEventDocument>> eventsByOrderId = allEvents.stream()
                 .collect(Collectors.groupingBy(OrderEventDocument::getOrderId));
 
-        // Project state for each order and filter by customerId
         return eventsByOrderId.values()
                 .stream()
                 .map(orderEventLifecycleTransformer::projectOrderState)
@@ -92,12 +88,10 @@ public class OrderEventServiceImpl implements OrderEventService {
     @Override
     @Transactional
     public OrderEventDocumentDTO deleteOrder(String orderId, String eventSource) {
-        // Check if order exists
         if (!orderExists(orderId)) {
             throw new RuntimeException("Order not found with id: " + orderId);
         }
 
-        // Create a DELETE event
         CreateOrderEventRequest deleteRequest = orderEventLifecycleTransformer
                 .createDeleteEventRequest(orderId, eventSource);
         return createOrderEvent(deleteRequest);
@@ -108,4 +102,5 @@ public class OrderEventServiceImpl implements OrderEventService {
         List<OrderEventDocument> events = orderEventRepository.findByOrderIdOrderedByVersion(orderId);
         return !events.isEmpty();
     }
+
 }

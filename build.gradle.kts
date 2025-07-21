@@ -42,6 +42,7 @@ dependencies {
 	implementation(libs.spring.kafka)
 	implementation(libs.kafka.avro.serializer)
 	implementation(libs.springdoc.openapi.starter.webmvc.ui)
+	implementation(libs.zeplinko.commons.lang.ext)
 
 	developmentOnly(libs.spring.boot.devtools)
 	developmentOnly(libs.spring.boot.docker.compose)

@@ -33,4 +33,8 @@ public class KafkaConstants {
     public static final String USER_AVRO_LISTENER_ID = "userAvroListenerId";
 
     public static final String USER_AVRO_LISTENER_GROUP = "userAvroListenerGroup";
+
+    public static final String ORDER_AVRO_LISTENER_ID = "orderAvroListenerId";
+
+    public static final String ORDER_AVRO_LISTENER_GROUP = "orderAvroListenerGroup";
 }

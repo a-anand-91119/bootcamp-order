@@ -8,7 +8,6 @@ import java.util.List;
 
 public interface OrderEventService {
 
-    // Event operations
     OrderEventDocumentDTO createOrderEvent(CreateOrderEventRequest request);
 
     List<OrderEventDocumentDTO> getEventsByOrderId(String orderId);
@@ -17,16 +16,14 @@ public interface OrderEventService {
 
     List<OrderEventDocumentDTO> getEventsByType(OrderEventType eventType);
 
-    // State projection operations
     OrderStateDTO getOrderCurrentState(String orderId);
 
     OrderStateDTO getOrderStateAtVersion(String orderId, Integer version);
 
     List<OrderStateDTO> getOrderStatesByCustomerId(String customerId);
 
-    // Soft delete operation (creates DELETE event)
     OrderEventDocumentDTO deleteOrder(String orderId, String eventSource);
 
-    // Check if order exists (has events)
     boolean orderExists(String orderId);
+
 }

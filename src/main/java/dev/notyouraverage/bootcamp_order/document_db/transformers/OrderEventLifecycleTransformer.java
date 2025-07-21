@@ -58,16 +58,15 @@ public class OrderEventLifecycleTransformer {
             return null;
         }
 
-        String orderId = events.get(0).getOrderId();
+        String orderId = events.getFirst().getOrderId();
         OrderStatus currentStatus = OrderStatus.CREATED;
         String customerId = null;
         LocalDateTime orderCreatedAt = null;
         LocalDateTime lastUpdatedAt = null;
-        Integer currentEventVersion = 0;
+        int currentEventVersion = 0;
         Map<String, Object> currentPayload = null;
         boolean isDeleted = false;
 
-        // Project state by applying events in order
         for (OrderEventDocument event : events) {
             currentEventVersion = Math.max(currentEventVersion, event.getEventVersion());
             lastUpdatedAt = event.getTimestamp();
@@ -88,8 +87,7 @@ public class OrderEventLifecycleTransformer {
                         if (statusObj instanceof String) {
                             try {
                                 currentStatus = OrderStatus.valueOf((String) statusObj);
-                            } catch (IllegalArgumentException e) {
-                                // Keep current status if invalid
+                            } catch (IllegalArgumentException _) {
                             }
                         }
                     }
@@ -113,13 +111,11 @@ public class OrderEventLifecycleTransformer {
                         if (statusObj instanceof String) {
                             try {
                                 currentStatus = OrderStatus.valueOf((String) statusObj);
-                            } catch (IllegalArgumentException e) {
-                                // Keep current status if invalid
+                            } catch (IllegalArgumentException _) {
                             }
                         }
                     }
                     break;
-                // Handle other event types as needed
             }
         }
 
@@ -137,12 +133,12 @@ public class OrderEventLifecycleTransformer {
     }
 
     public CreateOrderEventRequest createDeleteEventRequest(String orderId, String eventSource) {
-        CreateOrderEventRequest request = new CreateOrderEventRequest();
-        request.setOrderId(orderId);
-        request.setEventType(OrderEventType.ORDER_DELETED);
-        request.setPayload(Map.of("reason", "Order deleted"));
-        request.setTimestamp(LocalDateTime.now());
-        request.setEventSource(eventSource);
-        return request;
+        return CreateOrderEventRequest.builder()
+                .orderId(orderId)
+                .eventType(OrderEventType.ORDER_DELETED)
+                .payload(Map.of("reason", "Order deleted"))
+                .timestamp(LocalDateTime.now())
+                .eventSource(eventSource)
+                .build();
     }
 }
