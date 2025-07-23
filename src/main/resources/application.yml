@@ -2,36 +2,55 @@ spring:
   application:
     name: bootcamp-order
   datasource:
-    url: jdbc:postgresql://localhost:5432/oms_bootcamp
-    username: foobar
-    password: foobar
+    url: ${SPRING_DATASOURCE_URL:jdbc:postgresql://postgres:5432/oms_bootcamp}
+    username: ${SPRING_DATASOURCE_USERNAME:foobar}
+    password: ${SPRING_DATASOURCE_PASSWORD:foobar}
   kafka:
-    bootstrap-servers: localhost:9092
+    bootstrap-servers: ${SPRING_KAFKA_BOOTSTRAP_SERVERS:localhost:9092}
     properties:
-      schema.registry.url: http://localhost:8081
-      key.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      value.serializer: io.confluent.kafka.serializers.KafkaAvroSerializer
-      key.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
-      value.deserializer: io.confluent.kafka.serializers.KafkaAvroDeserializer
-      specific.avro.reader: true
-
+      schema.registry.url: ${SPRING_KAFKA_PROPERTIES_SCHEMA_REGISTRY_URL:http://localhost:8081}
   docker:
     compose:
       enabled: false
       file: ./dependencies/compose.yaml
   jpa:
     open-in-view: false
+    hibernate:
+      ddl-auto: validate
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: false
+  data:
+    mongodb:
+      uri: ${SPRING_DATA_MONGODB_URI:mongodb://foobar:foobar@mongodb:27017/oms_bootcamp}
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: always
+  health:
+    mongo:
+      enabled: true
+    db:
+      enabled: true
 app:
   kafka:
     avro:
-      bootstrap-servers: localhost:9092
+      bootstrap-servers: ${APP_KAFKA_AVRO_BOOTSTRAP_SERVERS:localhost:9092}
       properties:
-        schema.registry.url: http://localhost:8081
+        schema.registry.url: ${APP_KAFKA_AVRO_PROPERTIES_SCHEMA_REGISTRY_URL:http://localhost:8081}
       consumer:
         properties:
           specific.avro.reader: true
     json:
-      bootstrap-servers: localhost:9092
+      bootstrap-servers: ${APP_KAFKA_JSON_BOOTSTRAP_SERVERS:localhost:9092}
     topics:
       order_created: order.created
       user_avro_message: avro.user

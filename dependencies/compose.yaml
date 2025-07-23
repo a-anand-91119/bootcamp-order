@@ -7,6 +7,11 @@ services:
       - 'POSTGRES_USER=foobar'
     ports:
       - '5432:5432'
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U foobar -d oms_bootcamp" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   kafka:
     image: apache/kafka:latest
@@ -27,6 +32,11 @@ services:
     ports:
       - "9092:9092"
       - "9094:9094"
+    healthcheck:
+      test: [ "CMD", "/opt/kafka/bin/kafka-topics.sh", "--bootstrap-server", "localhost:9092", "--list" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   kafka-ui:
     image: provectuslabs/kafka-ui:latest
@@ -48,9 +58,15 @@ services:
       - "8081:8081"
     environment:
       SCHEMA_REGISTRY_HOST_NAME: schema-registry
-      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081
+      SCHEMA_REGISTRY_LISTENERS: http://schema-registry:8081,http://localhost:8081
       SCHEMA_REGISTRY_KAFKASTORE_BOOTSTRAP_SERVERS: PLAINTEXT://kafka:9094
       SCHEMA_REGISTRY_DEBUG: 'true'
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://127.0.0.1:8081/subjects" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 10s
 
   mongodb:
     image: 'mongo:latest'
@@ -62,3 +78,8 @@ services:
       - '27017:27017'
     volumes:
       - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 10s
+      timeout: 10s
+      retries: 5

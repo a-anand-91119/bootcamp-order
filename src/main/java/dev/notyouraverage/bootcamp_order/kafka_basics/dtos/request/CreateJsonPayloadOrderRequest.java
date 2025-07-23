@@ -11,7 +11,7 @@ import lombok.Data;
 
 @Data
 @Builder
-public class CreateOrderRequest {
+public class CreateJsonPayloadOrderRequest {
 
     @NotBlank(message = "Order message is required") @Size(min = 1, max = 500, message = "Order message must be between 1 and 500 characters") private String message;
 

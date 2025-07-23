@@ -1,7 +1,7 @@
 package dev.notyouraverage.bootcamp_order.kafka_basics.services.impl;
 
 import dev.notyouraverage.bootcamp_order.constants.KafkaConstants;
-import dev.notyouraverage.bootcamp_order.kafka_basics.dtos.request.CreateOrderRequest;
+import dev.notyouraverage.bootcamp_order.kafka_basics.dtos.request.CreateJsonPayloadOrderRequest;
 import dev.notyouraverage.bootcamp_order.kafka_basics.services.KafkaService;
 import dev.notyouraverage.bootcamp_order.kafka_basics.transformers.OrderEventTransformer;
 import dev.notyouraverage.commons.utils.CompletableFutureUtils;
@@ -31,7 +31,7 @@ public class KafkaServiceImpl implements KafkaService {
     }
 
     @Override
-    public void send(CreateOrderRequest request) {
+    public void send(CreateJsonPayloadOrderRequest request) {
         OrderCreated orderCreated = orderEventTransformer.toOrderCreatedEvent(request);
         CompletableFutureUtils.unchekedGet(kafkaTemplate.send(orderCreatedTopic, orderCreated));
     }

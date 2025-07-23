@@ -22,13 +22,13 @@ public class KafkaAvroController {
         User user = User.newBuilder()
                 .setFirstName(request.firstName())
                 .setLastName(request.lastName())
-                .setPhoneNumber(Integer.parseInt(request.phoneNumber()))
+                .setPhoneNumber(request.phoneNumber())
                 .build();
 
         kafkaAvroService.sendUser(user);
         return ResponseEntity.ok(ResponseWrapper.success("User sent via Avro"));
     }
 
-    public record UserRequest(String firstName, String lastName, String phoneNumber) {
+    public record UserRequest(String firstName, String lastName, Integer phoneNumber) {
     }
 }
